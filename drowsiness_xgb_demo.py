@@ -27,9 +27,14 @@ from xgboost import XGBClassifier, XGBRFClassifier
 import logging
 
 logging.basicConfig(
+    filename='output/drowsiness_xgb_demo.log',  # Log file path
+    filemode='w', # 'w' to overwrite the log file each run, 'a' to append
     level=logging.INFO,  # Set the minimum level to capture (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format='%(asctime)s - %(levelname)s - %(message)s'  # Define how the log looks
 )
+
+logging.info("Starting drowsiness_xgb_demo.py script.")
+
 MODEL_MODE: Literal["XGBRF", "XGB_GBDT"] = "XGBRF"
 RANDOM_STATE = 42
 N_DRIVERS = 20
@@ -283,13 +288,13 @@ def print_metrics(
     probability = model.predict_proba(features)[:, 1]
     if target.nunique() < 2:
         raise ValueError(f"{label} test labels contain only one class; ROC-AUC is undefined.")
-    print(f"\n{label} test metrics")
-    print(f"  Accuracy : {accuracy_score(target, prediction):.3f}")
-    print(f"  Precision: {precision_score(target, prediction, zero_division=0):.3f}")
-    print(f"  Recall   : {recall_score(target, prediction, zero_division=0):.3f}")
-    print(f"  F1       : {f1_score(target, prediction, zero_division=0):.3f}")
-    print(f"  ROC-AUC  : {roc_auc_score(target, probability):.3f}")
 
+    logging.info(f"\n{label} test metrics")
+    logging.info(f"  Accuracy : {accuracy_score(target, prediction):.3f}")
+    logging.info(f"  Precision: {precision_score(target, prediction, zero_division=0):.3f}")
+    logging.info(f"  Recall   : {recall_score(target, prediction, zero_division=0):.3f}")
+    logging.info(f"  F1       : {f1_score(target, prediction, zero_division=0):.3f}")
+    logging.info(f"  ROC-AUC  : {roc_auc_score(target, probability):.3f}")
 
 def render_importance_heatmap(
     detection_importance: pd.DataFrame,
@@ -403,17 +408,14 @@ def main() -> None:
         data = generate_synthetic_data()
         data.to_csv(csv_path, index=False)
 
-    print(f"Synthetic data: {len(data):,} rows x {len(data.columns)} columns")
-    print(f"Saved CSV: {csv_path}")
-    print("\nFirst 10 synthetic rows:")
-    print(data.head(10).to_string(index=False))
-    print(
-        f"\nStage 1 class counts: {data['y_detect'].value_counts().sort_index().to_dict()}"
-    )
-    print(
-        "Stage 2 eligible class counts: "
-        f"{data['y_predict_5min'].value_counts(dropna=True).sort_index().to_dict()}"
-    )
+    # print(f"Synthetic data: {len(data):,} rows x {len(data.columns)} columns")
+    # print(f"Saved CSV: {csv_path}")
+    # print("\nFirst 10 synthetic rows:")
+    # print(data.head(10).to_string(index=False))
+
+    logging.info(f"Stage 1 class counts: {data['y_detect'].value_counts().sort_index().to_dict()}")
+
+    logging.info(f"Stage 2 eligible class counts: {data['y_predict_5min'].value_counts(dropna=True).sort_index().to_dict()}")
 
     splitter = GroupShuffleSplit(n_splits=1, train_size=0.8, random_state=RANDOM_STATE)
     train_indices, test_indices = next(
@@ -428,12 +430,14 @@ def main() -> None:
         detection_train[FEATURE_NAMES],
         detection_train["y_detect"],
     )
+
     print_metrics(
         "Stage 1 Detection",
         detection_model,
         detection_test[FEATURE_NAMES],
         detection_test["y_detect"],
     )
+
     detection_importance = extract_xgb_importance_df(detection_model, FEATURE_NAMES)
 
     eligible = data["y_predict_5min"].notna()
@@ -454,21 +458,22 @@ def main() -> None:
     )
     prediction_importance = extract_xgb_importance_df(prediction_model, FEATURE_NAMES)
 
-    print("\nStage 1 feature importance (% of each metric total):")
-    print(detection_importance.to_string(float_format=lambda value: f"{value:6.2f}"))
-    print("\nStage 2 feature importance (% of each metric total):")
-    print(prediction_importance.to_string(float_format=lambda value: f"{value:6.2f}"))
+    logging.info("Stage 1 feature importance (% of each metric total):")
+    logging.info("\n" + detection_importance.to_string(float_format=lambda value: f"{value:6.2f}"))
+    logging.info("Stage 2 feature importance (% of each metric total):")
+    logging.info("\n" + prediction_importance.to_string(float_format=lambda value: f"{value:6.2f}"))
+
     comparison = pd.DataFrame(
         {
             "Detection Model": detection_importance["Total gain"],
             "Prediction Model": prediction_importance["Total gain"],
         }
     ).reindex(detection_importance.index)
-    print("\nTotal gain comparison (%):")
-    print(comparison.to_string(float_format=lambda value: f"{value:6.2f}"))
+    logging.info("Total gain comparison (%):")
+    logging.info("\n" + comparison.to_string(float_format=lambda value: f"{value:6.2f}"))
 
     render_importance_heatmap(detection_importance, prediction_importance, image_path)
-    print(f"\nSaved feature importance heatmap: {image_path}")
+    logging.info(f"Saved feature importance heatmap: {image_path}")
 
 
 if __name__ == "__main__":

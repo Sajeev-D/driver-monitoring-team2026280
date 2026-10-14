@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Editors / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local data (may contain faces, keep it off GitHub)
+recordings/
+*.mp4
+*.avi

@@ -7,6 +7,7 @@ Run from the repo root:
     python scripts/demo_webcam.py                  # default webcam
     python scripts/demo_webcam.py --camera 1       # another camera
     python scripts/demo_webcam.py --video clip.mp4 # a recorded video
+    python scripts/demo_webcam.py --picamera       # Raspberry Pi CSI camera (OV9281)
 
 Keys:  q or Esc = quit,  s = save the 60 s buffer to recordings/*.npz
 """
@@ -41,13 +42,56 @@ def parse_args():
     p = argparse.ArgumentParser(description="Eye feature extraction demo")
     p.add_argument("--camera", type=int, default=0, help="webcam index (default 0)")
     p.add_argument("--video", type=str, help="use a video file instead of the webcam")
+    p.add_argument("--picamera", action="store_true",
+                   help="use the Raspberry Pi CSI camera (e.g. OV9281) through Picamera2")
     p.add_argument("--model", type=str,
                    default=str(REPO_ROOT / "models" / "face_landmarker.task"))
-    p.add_argument("--width", type=int, default=640)
-    p.add_argument("--height", type=int, default=480)
+    p.add_argument("--width", type=int, help="default 640")
+    p.add_argument("--height", type=int, help="default 480 (400 with --picamera)")
+    p.add_argument("--fps", type=float, default=30.0, help="--picamera frame rate (default 30)")
     p.add_argument("--no-mirror", action="store_true",
                    help="don't flip the preview like a mirror")
-    return p.parse_args()
+    args = p.parse_args()
+    args.width = args.width or 640
+    # OV9281 is 1280x800 (16:10), so 640x400 keeps the full field of view.
+    args.height = args.height or (400 if args.picamera else 480)
+    return args
+
+
+class PiCamera:
+    """Raspberry Pi CSI camera through Picamera2 (libcamera), with the same
+    read() / get() / release() calls the demo uses on cv2.VideoCapture.
+
+    Returns single-channel grayscale frames: the Y plane of YUV420, which for
+    a mono sensor like the OV9281 is the whole image."""
+
+    def __init__(self, width, height, fps):
+        from picamera2 import Picamera2  # only installed on the Pi
+
+        self._cam = Picamera2()
+        config = self._cam.create_video_configuration(
+            main={"size": (width, height), "format": "YUV420"},
+            controls={"FrameRate": fps},
+        )
+        self._cam.configure(config)
+        # libcamera may adjust the size slightly; use what it actually gave us.
+        self._width, self._height = self._cam.camera_configuration()["main"]["size"]
+        self._fps = fps
+        self._cam.start()
+
+    def isOpened(self):
+        return True
+
+    def read(self):
+        yuv = self._cam.capture_array("main")
+        return True, np.ascontiguousarray(yuv[:self._height, :self._width])
+
+    def get(self, prop):
+        return self._fps if prop == cv2.CAP_PROP_FPS else 0.0
+
+    def release(self):
+        self._cam.stop()
+        self._cam.close()
 
 
 def put_text(img, text, org, color=WHITE, scale=0.6):
@@ -109,6 +153,8 @@ def main():
 
     if args.video:
         cap = cv2.VideoCapture(args.video)
+    elif args.picamera:
+        cap = PiCamera(args.width, args.height, args.fps)
     else:
         cap = cv2.VideoCapture(args.camera)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)

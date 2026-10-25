@@ -29,7 +29,7 @@ class DecisionTreeClassifier:
     ):
         self.max_depth = max_depth # caps the max # of decision forks from root to leaf
         self.min_samples_split = min_samples_split # min # of samples for split to occur
-        self.max_features = max_features # # of feature columns evaluated when searching for best split
+        self.max_features = max_features # percentage (0-1) of feature columns evaluated when searching for best split
         self.random_state = random_state # seeds the random # generator to select different subset of features when building the tree
         self.root = root # root of the decision tree
         self.random_number_generator = np.random.RandomState(self.random_state)
@@ -40,6 +40,7 @@ class DecisionTreeClassifier:
         X = np.array(X)
         y = np.array(y)
 
+        logging.info("building a decision tree")
         self.root = self._build_tree(X, y, depth=0)
 
         # return the decision tree classifier object
@@ -101,11 +102,13 @@ class DecisionTreeClassifier:
         # select a random subset of features to evaluate for the best split
         if self.max_features is None:
             features = range(num_features)
-        else:
-            if self.max_features > num_features:
-                logging.warning("max_features is set to a number greater than the total number of available features")
+        else:             
+            k = 0
+            if self.max_features > 1 or self.max_features <= 0:
+                raise ValueError("max_features must be in (0, 1]")
+            else:
+                k = max(1, round(self.max_features * num_features))
 
-            k = min(self.max_features, num_features)
             features = self.random_number_generator.choice(num_features, k, replace=False) # randomly picks features to consider at this split
 
         for feature in features: # looping through all columns i.e. features
@@ -129,6 +132,20 @@ class DecisionTreeClassifier:
 
         return best_feature, best_threshold, best_gain
 
-    def predict(self, X: np.ndarray, y: np.ndarray):
+    # Inference step: takes in new data, X i.e. the array of samples and gives back labels i.e. outputs
+    def predict(self, X: np.ndarray):
+        logging.info("calling predict")
         X = np.array(X)
-        # continue here
+        outputs = []
+        for sample in X:
+            label = self._predict_step(sample, self.root) # traverses the tree for the current sample to get the output label
+            outputs.append(label)
+
+        return np.array(outputs)
+    
+    def _predict_step(self, x: np.ndarray, node: Node): # x is one row i.e. sample in X
+        if node.value is not None: # check node is a leaf node
+            return node.value
+        if x[node.feature] <= node.threshold: # else traverse the correct fork based on input sample value
+            return self._predict_step(x, node.left)
+        return self._predict_step(x, node.right)

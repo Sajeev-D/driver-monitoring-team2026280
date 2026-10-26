@@ -1,20 +1,21 @@
 from pathlib import Path
 import sys
+import logging
 
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root)) # put the project root in the import path
 
-from src.driver_monitoring_ml.models.random_forest import RandomForestClassifier
-import pandas as pd
-import numpy as np
-import logging
-
 logging.basicConfig(
     filename="outputs/logs/model.log",
-    filemode='w',
+    filemode="w",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+from src.driver_monitoring_ml.models.random_forest import RandomForestClassifier
+from src.driver_monitoring_ml.evaluation.metrics import *
+import pandas as pd
+import numpy as np
 
 logging.info("in random_forest_test.py")
 
@@ -70,8 +71,24 @@ def main():
     logging.info("running inference using random forest classifier")
     outputs = rf.predict(X_test)
 
-    print(f"len of outputs is {len(outputs)} and len of y_test is {len(y_test)}")
+    logging.info(f"len of outputs is {len(outputs)} and len of y_test is {len(y_test)}")
+
+    confusion_matrix_tuple = derive_confusion_matrix(y_test, outputs)
+    tp_count = confusion_matrix_tuple[0]
+    fp_count = confusion_matrix_tuple[2]
+    tn_count = confusion_matrix_tuple[1]
+    fn_count = confusion_matrix_tuple[3]
+
+    acc = accuracy_score(tp_count, tn_count, len(y_test))
+    prec = precision_score(tp_count, fp_count)
+    recall = recall_score(tp_count, fn_count)
+    f1 = f1_score(prec, recall)
+
+    logging.info(
+    "Evaluation Metrics | Accuracy: %.2f | Precision: %.2f | "
+    "Recall: %.2f | F1 Score: %.2f",
+    acc, prec, recall, f1
+)
 
 if __name__ == "__main__":
     main()
-

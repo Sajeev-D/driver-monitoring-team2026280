@@ -11,7 +11,7 @@ from typing import List
 
 logging.basicConfig(
     filename="outputs/logs/model.log",
-    filemode='a',
+    filemode="a",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )

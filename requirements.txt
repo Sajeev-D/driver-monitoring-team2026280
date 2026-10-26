@@ -1,6 +1,8 @@
 # 0.10.32 provides Windows x64 and Apple Silicon macOS ARM64 wheels.
 # Use Python 3.12 on both platforms; the code uses the MediaPipe Tasks API.
-mediapipe==0.10.32
+mediapipe==0.10.32; platform_machine != "aarch64"
+# Raspberry Pi (64-bit Linux ARM): same floor the pi-ov9281 branch used before the merge.
+mediapipe>=0.10.14,<0.11; platform_machine == "aarch64"
 opencv-python>=4.8,<5
 numpy>=1.26,<3
 pytest>=8,<10

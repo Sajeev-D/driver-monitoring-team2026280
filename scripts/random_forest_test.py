@@ -13,7 +13,14 @@ logging.basicConfig(
 )
 
 from src.driver_monitoring_ml.models.random_forest import RandomForestClassifier
-from src.driver_monitoring_ml.evaluation.metrics import *
+from sklearn.ensemble import RandomForestClassifier as SklearnRandomForestClassifier
+from src.driver_monitoring_ml.evaluation.metrics import (
+    accuracy_score,
+    derive_confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 import pandas as pd
 import numpy as np
 
@@ -56,6 +63,26 @@ y_train = train_df[label_col].to_numpy()
 X_test = test_df[feature_cols].to_numpy()
 y_test = test_df[label_col].to_numpy()
 
+
+def log_metrics(label, y_true, predictions):
+    tp_count, tn_count, fp_count, fn_count = derive_confusion_matrix(
+        y_true, predictions
+    )
+    accuracy = accuracy_score(tp_count, tn_count, len(y_true))
+    precision = precision_score(tp_count, fp_count)
+    recall = recall_score(tp_count, fn_count)
+    f1 = f1_score(precision, recall)
+
+    logging.info(
+        "%s | Accuracy: %.2f | Precision: %.2f | Recall: %.2f | F1 Score: %.2f",
+        label,
+        accuracy,
+        precision,
+        recall,
+        f1,
+    )
+
+
 def main():
     logging.info("creating random forest classifier object")
     rf = RandomForestClassifier(
@@ -65,30 +92,27 @@ def main():
         random_state=42
     )
 
-    logging.info("training random forest classifier")
+    rf_scikit = SklearnRandomForestClassifier(
+        n_estimators=10,
+        max_depth=4,
+        max_features=0.7,
+        random_state=42,
+    )
+
+    logging.info("training custom random forest classifier")
     rf.fit(X_train, y_train)
 
-    logging.info("running inference using random forest classifier")
-    outputs = rf.predict(X_test)
+    logging.info("training scikit-learn random forest classifier")
+    rf_scikit.fit(X_train, y_train)
 
-    logging.info(f"len of outputs is {len(outputs)} and len of y_test is {len(y_test)}")
+    logging.info("running inference using custom random forest classifier")
+    custom_predictions = rf.predict(X_test)
 
-    confusion_matrix_tuple = derive_confusion_matrix(y_test, outputs)
-    tp_count = confusion_matrix_tuple[0]
-    fp_count = confusion_matrix_tuple[2]
-    tn_count = confusion_matrix_tuple[1]
-    fn_count = confusion_matrix_tuple[3]
+    logging.info("running inference using scikit-learn random forest classifier")
+    sklearn_predictions = rf_scikit.predict(X_test)
 
-    acc = accuracy_score(tp_count, tn_count, len(y_test))
-    prec = precision_score(tp_count, fp_count)
-    recall = recall_score(tp_count, fn_count)
-    f1 = f1_score(prec, recall)
-
-    logging.info(
-    "Evaluation Metrics | Accuracy: %.2f | Precision: %.2f | "
-    "Recall: %.2f | F1 Score: %.2f",
-    acc, prec, recall, f1
-)
+    log_metrics("Custom random forest metrics", y_test, custom_predictions)
+    log_metrics("Scikit-learn random forest metrics", y_test, sklearn_predictions)
 
 if __name__ == "__main__":
     main()

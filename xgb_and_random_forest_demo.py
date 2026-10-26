@@ -28,8 +28,8 @@ from xgboost import XGBClassifier
 import logging
 
 logging.basicConfig(
-    filename= f'output/demo.log',  # Log file path
-    filemode='w', # 'w' to overwrite the log file each run, 'a' to append
+    filename="outputs/logs/model.log",  # Log file path
+    filemode="a", # 'w' to overwrite the log file each run, 'a' to append
     level=logging.INFO,  # Set the minimum level to capture (DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format='%(asctime)s - %(levelname)s - %(message)s'  # Define how the log looks
 )
@@ -446,7 +446,7 @@ def render_importance_heatmap(
 
 
 def main() -> None:
-    output_dir = Path(__file__).resolve().parent/"output"
+    output_dir = Path(__file__).resolve().parent/"outputs"
     output_dir.mkdir(exist_ok=True, parents=True)
     csv_path = output_dir / "synthetic_driver_drowsiness_data.csv"
     image_path = output_dir / f"{MODEL_MODE.lower()}_drowsiness_feature_importance.png"

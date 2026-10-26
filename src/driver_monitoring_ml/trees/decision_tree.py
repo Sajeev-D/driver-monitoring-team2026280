@@ -113,7 +113,7 @@ class DecisionTreeClassifier:
 
         for feature in features: # looping through all columns i.e. features
             thresholds = np.unique(X[:, feature]) # getting the array of unique values in the current column
-            for threshold in thresholds: # treating each value as a threshold
+            for threshold in thresholds: # treating each value in the column as a threshold
                 left_indices = np.where(X[:, feature] <= threshold)[0] # left child indexes
                 right_indices = np.where(X[:, feature] > threshold)[0] # right child indexes
 

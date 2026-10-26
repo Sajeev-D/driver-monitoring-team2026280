@@ -131,13 +131,7 @@ def draw_graph(view, buffer, calibration):
     text(view, "R", (w - 90, top + 24), YELLOW, 0.52)
     text(view, "L", (w - 45, top + 24), CYAN, 0.52)
 
-    arrays = buffer.as_arrays()
-    ts = arrays["timestamps_ms"]
-    if len(ts) < 2:
-        return
-    ears = buffer.ear_series()
-    mask = ts >= ts[-1] - GRAPH_S * 1000
-    ts, ears = ts[mask], ears[mask]
+    ts, ears = buffer.recent_ears(GRAPH_S)
     if len(ts) < 2:
         return
     baseline = top + 37

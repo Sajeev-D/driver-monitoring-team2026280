@@ -81,14 +81,10 @@ def draw_ear_graph(canvas, buffer):
     cv2.line(canvas, (0, y_line), (w, y_line), GREY, 1)
     put_text(canvas, f"{DEMO_CLOSED_LINE:.2f}", (5, y_line - 4), GREY, 0.45)
 
-    arrays = buffer.as_arrays()
-    ts = arrays["timestamps_ms"]
+    ts, ears = buffer.recent_ears(GRAPH_SECONDS)
     if len(ts) < 2:
         return
-    ears = buffer.ear_series()
     t_end = ts[-1]
-    keep = ts >= t_end - GRAPH_SECONDS * 1000
-    ts, ears = ts[keep], ears[keep]
     xs = ((ts - (t_end - GRAPH_SECONDS * 1000)) / (GRAPH_SECONDS * 1000) * (w - 1)).astype(int)
 
     for eye, color in ((0, YELLOW), (1, CYAN)):

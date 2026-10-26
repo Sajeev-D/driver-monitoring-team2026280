@@ -67,6 +67,19 @@ def test_face_lost_frames_are_kept_as_nan():
     assert ears.shape == (3, 2) and np.isnan(ears[1]).all()
 
 
+def test_recent_ears_matches_full_series_tail():
+    buf = LandmarkBuffer(window_s=1)
+    for t in range(0, 3000, 33):
+        buf.push(make_frame(t) if t % 99 else _empty_result(t))
+    arrays = buf.as_arrays()
+    keep = arrays["timestamps_ms"] >= arrays["timestamps_ms"][-1] - 500
+    ts, ears = buf.recent_ears(0.5)
+    assert ts.tolist() == arrays["timestamps_ms"][keep].tolist()
+    np.testing.assert_array_equal(ears, buf.ear_series()[keep])
+    expected = 1 - arrays["face_found"].mean()
+    assert abs(buf.missing_fraction() - expected) < 1e-9
+
+
 def test_empty_buffer_shapes():
     arrays = LandmarkBuffer().as_arrays()
     assert arrays["landmarks"].shape == (0, 2, 6, 2)

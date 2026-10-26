@@ -10,8 +10,8 @@ import logging
 from typing import List
 
 logging.basicConfig(
-    filename="outputs/logs/random_forest.log",
-    filemode='w',
+    filename="outputs/logs/model.log",
+    filemode='a',
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )

@@ -10,8 +10,8 @@ from src.driver_monitoring_ml.trees.criterion import information_gain
 import logging
 
 logging.basicConfig(
-    filename="outputs/logs/decision_tree.log",
-    filemode='w',
+    filename="outputs/logs/model.log",
+    filemode='a',
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -40,7 +40,7 @@ class DecisionTreeClassifier:
         X = np.asarray(X)
         y = np.asarray(y)
 
-        logging.info("building a decision tree")
+        # logging.info("building a decision tree")
         self.root = self._build_tree(X, y, depth=0)
 
         # return the decision tree classifier object
@@ -134,7 +134,7 @@ class DecisionTreeClassifier:
 
     # Inference step: takes in new data, X i.e. the array of samples and gives back labels i.e. outputs
     def predict(self, X: np.ndarray):
-        logging.info("calling predict")
+        # logging.info("calling predict")
         X = np.asarray(X)
         outputs = []
         for sample in X:

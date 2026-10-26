@@ -10,7 +10,7 @@ from src.driver_monitoring_ml.trees.criterion import information_gain
 import logging
 
 logging.basicConfig(
-    filename="outputs/logs/decision_tree_log.log",
+    filename="outputs/logs/decision_tree.log",
     filemode='w',
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -37,8 +37,8 @@ class DecisionTreeClassifier:
     # function to build the decision tree recursively
     def fit(self, X: np.ndarray, y: np.ndarray):
         # convert X (n-dimensional array that stores the feature values) and y (1-dimensional array that stores the labels) to numpy arrays
-        X = np.array(X)
-        y = np.array(y)
+        X = np.asarray(X)
+        y = np.asarray(y)
 
         logging.info("building a decision tree")
         self.root = self._build_tree(X, y, depth=0)
@@ -135,7 +135,7 @@ class DecisionTreeClassifier:
     # Inference step: takes in new data, X i.e. the array of samples and gives back labels i.e. outputs
     def predict(self, X: np.ndarray):
         logging.info("calling predict")
-        X = np.array(X)
+        X = np.asarray(X)
         outputs = []
         for sample in X:
             label = self._predict_step(sample, self.root) # traverses the tree for the current sample to get the output label

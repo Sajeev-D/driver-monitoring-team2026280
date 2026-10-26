@@ -24,6 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from eye_features import EyeFeatureExtractor, LandmarkBuffer, eye_aspect_ratio  # noqa: E402
+from eye_features.picamera import PiCamera  # noqa: E402
 
 GRAPH_SECONDS = 10
 GRAPH_HEIGHT = 120
@@ -56,42 +57,6 @@ def parse_args():
     # OV9281 is 1280x800 (16:10), so 640x400 keeps the full field of view.
     args.height = args.height or (400 if args.picamera else 480)
     return args
-
-
-class PiCamera:
-    """Raspberry Pi CSI camera through Picamera2 (libcamera), with the same
-    read() / get() / release() calls the demo uses on cv2.VideoCapture.
-
-    Returns single-channel grayscale frames: the Y plane of YUV420, which for
-    a mono sensor like the OV9281 is the whole image."""
-
-    def __init__(self, width, height, fps):
-        from picamera2 import Picamera2  # only installed on the Pi
-
-        self._cam = Picamera2()
-        config = self._cam.create_video_configuration(
-            main={"size": (width, height), "format": "YUV420"},
-            controls={"FrameRate": fps},
-        )
-        self._cam.configure(config)
-        # libcamera may adjust the size slightly; use what it actually gave us.
-        self._width, self._height = self._cam.camera_configuration()["main"]["size"]
-        self._fps = fps
-        self._cam.start()
-
-    def isOpened(self):
-        return True
-
-    def read(self):
-        yuv = self._cam.capture_array("main")
-        return True, np.ascontiguousarray(yuv[:self._height, :self._width])
-
-    def get(self, prop):
-        return self._fps if prop == cv2.CAP_PROP_FPS else 0.0
-
-    def release(self):
-        self._cam.stop()
-        self._cam.close()
 
 
 def put_text(img, text, org, color=WHITE, scale=0.6):

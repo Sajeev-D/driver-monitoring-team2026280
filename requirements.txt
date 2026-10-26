@@ -1,4 +1,6 @@
-mediapipe>=0.10.14
-opencv-python
-numpy
-pytest
+# 0.10.32 provides Windows x64 and Apple Silicon macOS ARM64 wheels.
+# Use Python 3.12 on both platforms; the code uses the MediaPipe Tasks API.
+mediapipe==0.10.32
+opencv-python>=4.8,<5
+numpy>=1.26,<3
+pytest>=8,<10

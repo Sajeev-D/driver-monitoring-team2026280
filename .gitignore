@@ -1,16 +1,10 @@
-# Python
-__pycache__/
-*.pyc
 .venv/
-venv/
+__pycache__/
 .pytest_cache/
-
-# Editors / OS
-.vscode/
 .DS_Store
-Thumbs.db
-
-# Local data (may contain faces, keep it off GitHub)
-recordings/
-*.mp4
-*.avi
+calibration/*.jpg
+calibration/*.jpeg
+calibration/*.png
+calibration/*.json
+recordings/*.csv
+recordings/*.npz

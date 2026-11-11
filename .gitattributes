@@ -1,0 +1,3 @@
+
+# Preserve shared dataset bytes and manifest checksums across platforms.
+data/processed/drowsiness/*.csv -text

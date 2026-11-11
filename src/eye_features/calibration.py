@@ -33,6 +33,23 @@ class EyeCalibration:
             raise ValueError("Open-eye and closed-eye images are too similar (EAR gap < 0.02). "
                              "Use an image with clearly open eyes and one with closed eyes.")
 
+    @classmethod
+    def from_ear_samples(cls, samples):
+        """Fit exact per-eye extrema from valid [N, 2] calibration EAR samples."""
+        values = np.asarray(samples, dtype=float)
+        if values.ndim != 2 or values.shape[1] != 2:
+            raise ValueError("Expected EAR samples with shape [N, 2].")
+        values = values[np.all(np.isfinite(values) & (values >= 0), axis=1)]
+        if len(values) < 2:
+            raise ValueError("Need at least two valid calibration samples.")
+        return cls(tuple(values.max(axis=0)), tuple(values.min(axis=0)))
+
+    def openness(self, samples):
+        """Closed/min EAR maps to 0; open/max EAR maps to 1, per eye."""
+        values = np.asarray(samples, dtype=float)
+        return np.clip((values - np.asarray(self.ear_closed)) /
+                       (np.asarray(self.ear_open) - np.asarray(self.ear_closed)), 0, 1)
+
     def save(self, path):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)

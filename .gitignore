@@ -8,3 +8,10 @@ calibration/*.png
 calibration/*.json
 recordings/*.csv
 recordings/*.npz
+
+# Generated offline dataset tables, caches and local QA images
+/recordings/*/
+/calibration/**/*.json
+/calibration/**/*.jpg
+/calibration/**/*.jpeg
+/calibration/**/*.png

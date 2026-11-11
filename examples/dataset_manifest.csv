@@ -1,0 +1,2 @@
+dataset_id,subject_id,session_id,video_path,timestamps_path,timestamp_unit,timestamp_column,timestamps_skiprows,fps,kss,drowsiness_label,label_scope,label_source,extra_labels_json
+OUR_DATA,driver_A,driver_A_trip_01,videos/trip_01.mp4,,,,,,,awake,session,manual_review,{}

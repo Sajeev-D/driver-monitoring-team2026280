@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "columns": 273,
+  "total_windows": 10164,
+  "unique_window_keys": 10164,
+  "uta_videos_covered": 145,
+  "drozy_recordings_covered": 36,
+  "binary_camera_example_eligible_windows": 2945,
+  "tests_passed": 80,
+  "checks": [
+    "Exact shared schema/order",
+    "File SHA-256",
+    "Combined equals individual tables",
+    "Unique windows",
+    "Complete 60s windows at 10s stride",
+    "Normalized ranges",
+    "Dataset-specific label rules",
+    "Absent modalities blank",
+    "All available UTA sessions covered",
+    "Every DROZY KSS matches source KSS.txt"
+  ]
+}

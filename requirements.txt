@@ -4,3 +4,11 @@ mediapipe==0.10.32
 opencv-python>=4.8,<5
 numpy>=1.26,<3
 pytest>=8,<10
+
+xgboost 
+scikit-learn 
+joblib
+pandas  
+matplotlib 
+seaborn
+logging

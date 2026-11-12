@@ -1,4 +1,3 @@
-.venv/
 __pycache__/
 .pytest_cache/
 .DS_Store
@@ -8,3 +7,9 @@ calibration/*.png
 calibration/*.json
 recordings/*.csv
 recordings/*.npz
+
+venv/
+output/
+outputs/
+*.log
+.venv/

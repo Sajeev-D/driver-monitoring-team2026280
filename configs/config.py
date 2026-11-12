@@ -1,3 +1,5 @@
+from pathlib import Path
+
 FEATURE_COLUMNS: list[str] = [
     "eye_openness",
     "perclos",
@@ -11,3 +13,7 @@ FEATURE_COLUMNS: list[str] = [
 ]
 
 LABEL_COLUMN: str = "drowsiness_label"
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+LOG_PATH = PROJECT_ROOT / "outputs" / "logs" / "model.log"
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)

@@ -1,8 +1,9 @@
 import numpy as np
 import logging
+from configs import config
 
 logging.basicConfig(
-    filename="outputs/logs/model.log",
+    filename=config.LOG_PATH,
     filemode='a',
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"

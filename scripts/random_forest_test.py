@@ -5,8 +5,10 @@ import logging
 project_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(project_root)) # put the project root in the import path
 
+from configs import config
+
 logging.basicConfig(
-    filename="outputs/logs/model.log",
+    filename=config.LOG_PATH,
     filemode="w",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"

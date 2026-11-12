@@ -7,10 +7,11 @@ sys.path.insert(0, str(project_root)) # put the project root in the import path
 import numpy as np
 from src.driver_monitoring_ml.trees.node import Node
 from src.driver_monitoring_ml.trees.criterion import information_gain
+from configs import config
 import logging
 
 logging.basicConfig(
-    filename="outputs/logs/model.log",
+    filename=config.LOG_PATH,
     filemode="a",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"

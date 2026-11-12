@@ -8,9 +8,10 @@ from src.driver_monitoring_ml.trees.decision_tree import DecisionTreeClassifier
 import numpy as np 
 import logging
 from typing import List
+from configs import config
 
 logging.basicConfig(
-    filename="outputs/logs/model.log",
+    filename=config.LOG_PATH,
     filemode="a",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"

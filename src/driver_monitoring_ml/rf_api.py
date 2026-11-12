@@ -11,7 +11,7 @@ from configs import config
 import logging
 
 logging.basicConfig(
-    filename="outputs/logs/model.log",
+    filename=config.LOG_PATH,
     filemode="w",
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
@@ -112,6 +112,14 @@ def load_model():
     return joblib.load(MODEL_PATH)
 
 def main():
+    logging.basicConfig(
+        filename=config.LOG_PATH,
+        filemode="w",
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        force=True,
+    )
+
     training_csv = (
         project_root / "data" / "synthetic" / "driver_monitoring_synthetic_test.csv"
     )

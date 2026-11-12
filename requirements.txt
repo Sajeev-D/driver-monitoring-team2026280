@@ -1,5 +1,6 @@
 xgboost 
 scikit-learn 
+joblib
 pandas 
 numpy 
 matplotlib 

@@ -52,6 +52,10 @@ def parse_args():
     p.add_argument("--fps", type=float, default=30.0, help="--picamera frame rate (default 30)")
     p.add_argument("--no-mirror", action="store_true",
                    help="don't flip the preview like a mirror")
+    p.add_argument("--no-display", action="store_true",
+                   help="run headless: no drawing or window (Ctrl+C to stop)")
+    p.add_argument("--profile", action="store_true",
+                   help="print average per-stage time (ms) every 60 frames")
     args = p.parse_args()
     args.width = args.width or 640
     # OV9281 is 1280x800 (16:10), so 640x400 keeps the full field of view.
@@ -131,67 +135,100 @@ def main():
     start = time.monotonic()
     frame_index = 0
     video_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    stages = ("capture", "landmarks", "draw", "show")
+    stage_ms = dict.fromkeys(stages, 0.0)
+    prof_frames = 0
 
-    with EyeFeatureExtractor(model_path) as extractor:
-        while True:
-            ok, frame = cap.read()
-            if not ok:
-                break
+    try:
+        with EyeFeatureExtractor(model_path) as extractor:
+            while True:
+                t0 = time.perf_counter()
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                t1 = time.perf_counter()
 
-            if args.video:
-                timestamp_ms = int(frame_index * 1000 / video_fps)
-            else:
-                timestamp_ms = int((time.monotonic() - start) * 1000)
-            frame_index += 1
+                if args.video:
+                    timestamp_ms = int(frame_index * 1000 / video_fps)
+                else:
+                    timestamp_ms = int((time.monotonic() - start) * 1000)
+                frame_index += 1
 
-            result = extractor.process(frame, timestamp_ms)
-            buffer.push(result)
+                result = extractor.process(frame, timestamp_ms)
+                buffer.push(result)
+                t2 = time.perf_counter()
 
-            # Draw the eye points on the unflipped frame, then mirror it.
-            view = frame if frame.ndim == 3 else cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-            view = view.copy()
-            if result.face_found:
-                for eye in result.landmarks:
-                    for x, y in eye:
-                        cv2.circle(view, (int(x), int(y)), 2, GREEN, -1)
-            if not args.no_mirror:
-                view = cv2.flip(view, 1)
+                now = time.monotonic()
+                dt = now - last_time
+                last_time = now
+                if dt > 0:
+                    fps = 0.9 * fps + 0.1 * (1.0 / dt) if fps else 1.0 / dt
 
-            now = time.monotonic()
-            dt = now - last_time
-            last_time = now
-            if dt > 0:
-                fps = 0.9 * fps + 0.1 * (1.0 / dt) if fps else 1.0 / dt
+                if args.no_display:
+                    t3 = t4 = t2
+                    key = -1
+                else:
+                    t3, t4, key = render_and_show(args, frame, result, buffer, fps)
 
-            ear_r = eye_aspect_ratio(result.landmarks[0])
-            ear_l = eye_aspect_ratio(result.landmarks[1])
+                if args.profile:
+                    for name, d in zip(stages, (t1 - t0, t2 - t1, t3 - t2, t4 - t3)):
+                        stage_ms[name] += d * 1000
+                    prof_frames += 1
+                    if prof_frames == 60:
+                        total = sum(stage_ms.values()) / prof_frames
+                        print(f"fps {fps:5.1f} | " + "  ".join(
+                            f"{n} {stage_ms[n] / prof_frames:5.1f}" for n in stages) +
+                            f"  | total {total:5.1f} ms", flush=True)
+                        stage_ms = dict.fromkeys(stages, 0.0)
+                        prof_frames = 0
 
-            if result.face_found:
-                put_text(view, "FACE: TRACKED", (10, 25), GREEN)
-                put_text(view, f"EAR  R {ear_r:.3f}   L {ear_l:.3f}", (10, 50))
-                pitch, yaw, roll = result.head_pose
-                put_text(view, f"Head  pitch {pitch:+.0f}  yaw {yaw:+.0f}  roll {roll:+.0f}", (10, 75))
-            else:
-                put_text(view, "FACE: LOST", (10, 25), RED)
+                if key in (ord("q"), 27):
+                    break
+                if key == ord("s"):
+                    save_dir.mkdir(parents=True, exist_ok=True)
+                    out = save_dir / f"buffer_{time.strftime('%Y%m%d_%H%M%S')}.npz"
+                    np.savez(out, **buffer.as_arrays())
+                    print(f"Saved {len(buffer)} frames to {out}")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        cap.release()
+        if not args.no_display:
+            cv2.destroyAllWindows()
 
-            put_text(view, f"FPS {fps:.1f}", (view.shape[1] - 110, 25))
-            put_text(view, f"Buffer {len(buffer)} frames / {buffer.span_s():.0f} s   "
-                           f"missing {buffer.missing_fraction() * 100:.0f}%", (10, 100))
 
-            draw_ear_graph(view, buffer)
-            cv2.imshow("Eye feature extraction demo (q = quit, s = save)", view)
+def render_and_show(args, frame, result, buffer, fps):
+    """Draw the preview and push it to the window. Returns (draw_done, show_done, key)."""
+    # Draw the eye points on the unflipped frame, then mirror it.
+    view = frame if frame.ndim == 3 else cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+    view = view.copy()
+    if result.face_found:
+        for eye in result.landmarks:
+            for x, y in eye:
+                cv2.circle(view, (int(x), int(y)), 2, GREEN, -1)
+    if not args.no_mirror:
+        view = cv2.flip(view, 1)
 
-            key = cv2.waitKey(1) & 0xFF
-            if key in (ord("q"), 27):
-                break
-            if key == ord("s"):
-                save_dir.mkdir(parents=True, exist_ok=True)
-                out = save_dir / f"buffer_{time.strftime('%Y%m%d_%H%M%S')}.npz"
-                np.savez(out, **buffer.as_arrays())
-                print(f"Saved {len(buffer)} frames to {out}")
+    ear_r = eye_aspect_ratio(result.landmarks[0])
+    ear_l = eye_aspect_ratio(result.landmarks[1])
 
-    cap.release()
-    cv2.destroyAllWindows()
+    if result.face_found:
+        put_text(view, "FACE: TRACKED", (10, 25), GREEN)
+        put_text(view, f"EAR  R {ear_r:.3f}   L {ear_l:.3f}", (10, 50))
+        pitch, yaw, roll = result.head_pose
+        put_text(view, f"Head  pitch {pitch:+.0f}  yaw {yaw:+.0f}  roll {roll:+.0f}", (10, 75))
+    else:
+        put_text(view, "FACE: LOST", (10, 25), RED)
+
+    put_text(view, f"FPS {fps:.1f}", (view.shape[1] - 110, 25))
+    put_text(view, f"Buffer {len(buffer)} frames / {buffer.span_s():.0f} s   "
+                   f"missing {buffer.missing_fraction() * 100:.0f}%", (10, 100))
+
+    draw_ear_graph(view, buffer)
+    t_draw = time.perf_counter()
+    cv2.imshow("Eye feature extraction demo (q = quit, s = save)", view)
+    key = cv2.waitKey(1) & 0xFF
+    return t_draw, time.perf_counter(), key
 
 
 if __name__ == "__main__":
